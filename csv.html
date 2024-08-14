@@ -99,9 +99,11 @@
     </div>
 
     <script>
-        const rowsPerPage = 20;
+        const rowsPerPage = 10;
         let currentPage = 1;
         let data = [];
+        let columnData = [];
+        let headers = [];
 
         function handleFile() {
             const fileInput = document.getElementById('csvFileInput');
@@ -114,7 +116,15 @@
                     header: true,
                     complete: function(results) {
                         data = results.data;
-                        currentPage = 1; // Reset to first page
+                        headers = Object.keys(data[0] || {});
+                        
+                        if (columnName && headers.includes(columnName)) {
+                            columnData = data.map(row => row[columnName]).filter(value => value);
+                        } else {
+                            columnData = data;
+                        }
+                        
+                        currentPage = 1;
                         displayTable(columnName);
                     },
                     error: function(error) {
@@ -137,45 +147,53 @@
 
             const start = (currentPage - 1) * rowsPerPage;
             const end = start + rowsPerPage;
-            const pageData = data.slice(start, end);
+            const pageData = columnData.slice(start, end);
 
-            // Create table
             const table = document.createElement('table');
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
 
-            // Create table headers
-            const headerRow = document.createElement('tr');
-            if (data.length > 0) {
-                const headers = Object.keys(data[0]);
+            if (columnName && headers.includes(columnName)) {
+                const headerRow = document.createElement('tr');
+                const headerCell = document.createElement('th');
+                headerCell.textContent = columnName;
+                headerRow.appendChild(headerCell);
+                thead.appendChild(headerRow);
+
+                pageData.forEach(item => {
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td');
+                    cell.textContent = item || '';
+                    row.appendChild(cell);
+                    tbody.appendChild(row);
+                });
+            } else {
+                const headerRow = document.createElement('tr');
                 headers.forEach(header => {
                     const headerCell = document.createElement('th');
                     headerCell.textContent = header;
                     headerRow.appendChild(headerCell);
                 });
-            }
-            thead.appendChild(headerRow);
+                thead.appendChild(headerRow);
 
-            // Create table rows
-            pageData.forEach(row => {
-                const tableRow = document.createElement('tr');
-                const headers = Object.keys(data[0]);
-                headers.forEach(header => {
-                    const cell = document.createElement('td');
-                    cell.textContent = row[header] || '';
-                    tableRow.appendChild(cell);
+                pageData.forEach(row => {
+                    const tableRow = document.createElement('tr');
+                    headers.forEach(header => {
+                        const cell = document.createElement('td');
+                        cell.textContent = row[header] || '';
+                        tableRow.appendChild(cell);
+                    });
+                    tbody.appendChild(tableRow);
                 });
-                tbody.appendChild(tableRow);
-            });
+            }
 
             table.appendChild(thead);
             table.appendChild(tbody);
 
-            // Create pagination controls
             const pagination = document.createElement('div');
             pagination.className = 'pagination';
 
-            const totalPages = Math.ceil(data.length / rowsPerPage);
+            const totalPages = Math.ceil(columnData.length / rowsPerPage);
 
             if (currentPage > 1) {
                 const prevButton = document.createElement('button');
