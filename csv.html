@@ -22,8 +22,9 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             padding: 20px;
             width: 100%;
-            max-width: 800px;
+            max-width: 1000px;
             text-align: center;
+            overflow: hidden;
         }
         h1 {
             margin: 0 0 20px;
@@ -56,15 +57,20 @@
             background-color: #d6d6d6;
             cursor: not-allowed;
         }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            min-width: 600px;
         }
         th, td {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
+            word-wrap: break-word; /* Ensures long text wraps within cells */
         }
         th {
             background-color: #f4f4f4;
@@ -98,7 +104,7 @@
         <button onclick="handleFile()">Upload</button>
         <button onclick="printData()">Print</button>
         <button onclick="copyToClipboard()">Copy to Clipboard</button>
-        <div id="tableContainer"></div>
+        <div id="tableContainer" class="table-wrapper"></div>
     </div>
 
     <script>
@@ -119,7 +125,7 @@
                     header: true,
                     complete: function(results) {
                         data = results.data;
-                        headers = Object.keys(data[0] || {}); // Extract headers from the first row
+                        headers = Object.keys(data[0] || {});
                         
                         if (columnName && headers.includes(columnName)) {
                             columnData = data.map(row => ({ [columnName]: row[columnName] })).filter(row => row[columnName]);
@@ -127,7 +133,7 @@
                             columnData = data;
                         }
                         
-                        currentPage = 1; // Reset to first page
+                        currentPage = 1;
                         displayTable(columnName);
                     },
                     error: function(error) {
@@ -152,13 +158,11 @@
             const end = start + rowsPerPage;
             const pageData = columnData.slice(start, end);
 
-            // Create table
             const table = document.createElement('table');
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
 
             if (columnName && headers.includes(columnName)) {
-                // Display specific column
                 const headerRow = document.createElement('tr');
                 const headerCell = document.createElement('th');
                 headerCell.textContent = columnName;
@@ -173,7 +177,6 @@
                     tbody.appendChild(rowElement);
                 });
             } else {
-                // Display all columns
                 const headerRow = document.createElement('tr');
                 headers.forEach(header => {
                     const headerCell = document.createElement('th');
@@ -196,7 +199,6 @@
             table.appendChild(thead);
             table.appendChild(tbody);
 
-            // Create pagination controls
             const pagination = document.createElement('div');
             pagination.className = 'pagination';
 
