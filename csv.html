@@ -47,6 +47,7 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s ease;
+            margin: 5px;
         }
         button:hover {
             background-color: #0056b3;
@@ -95,11 +96,13 @@
         <input type="text" id="columnNameInput">
         <br><br>
         <button onclick="handleFile()">Upload</button>
+        <button onclick="printData()">Print</button>
+        <button onclick="copyToClipboard()">Copy to Clipboard</button>
         <div id="tableContainer"></div>
     </div>
 
     <script>
-        const rowsPerPage = 10;
+        const rowsPerPage = 20;
         let currentPage = 1;
         let data = [];
         let columnData = [];
@@ -116,15 +119,15 @@
                     header: true,
                     complete: function(results) {
                         data = results.data;
-                        headers = Object.keys(data[0] || {});
+                        headers = Object.keys(data[0] || {}); // Extract headers from the first row
                         
                         if (columnName && headers.includes(columnName)) {
-                            columnData = data.map(row => row[columnName]).filter(value => value);
+                            columnData = data.map(row => ({ [columnName]: row[columnName] })).filter(row => row[columnName]);
                         } else {
                             columnData = data;
                         }
                         
-                        currentPage = 1;
+                        currentPage = 1; // Reset to first page
                         displayTable(columnName);
                     },
                     error: function(error) {
@@ -140,7 +143,7 @@
             const tableContainer = document.getElementById('tableContainer');
             tableContainer.innerHTML = '';
 
-            if (data.length === 0) {
+            if (columnData.length === 0) {
                 tableContainer.innerHTML = '<p>No data to display.</p>';
                 return;
             }
@@ -149,25 +152,28 @@
             const end = start + rowsPerPage;
             const pageData = columnData.slice(start, end);
 
+            // Create table
             const table = document.createElement('table');
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
 
             if (columnName && headers.includes(columnName)) {
+                // Display specific column
                 const headerRow = document.createElement('tr');
                 const headerCell = document.createElement('th');
                 headerCell.textContent = columnName;
                 headerRow.appendChild(headerCell);
                 thead.appendChild(headerRow);
 
-                pageData.forEach(item => {
-                    const row = document.createElement('tr');
+                pageData.forEach(row => {
+                    const rowElement = document.createElement('tr');
                     const cell = document.createElement('td');
-                    cell.textContent = item || '';
-                    row.appendChild(cell);
-                    tbody.appendChild(row);
+                    cell.textContent = row[columnName] || '';
+                    rowElement.appendChild(cell);
+                    tbody.appendChild(rowElement);
                 });
             } else {
+                // Display all columns
                 const headerRow = document.createElement('tr');
                 headers.forEach(header => {
                     const headerCell = document.createElement('th');
@@ -190,6 +196,7 @@
             table.appendChild(thead);
             table.appendChild(tbody);
 
+            // Create pagination controls
             const pagination = document.createElement('div');
             pagination.className = 'pagination';
 
@@ -231,6 +238,27 @@
 
             tableContainer.appendChild(table);
             tableContainer.appendChild(pagination);
+        }
+
+        function printData() {
+            const csvContent = Papa.unparse(columnData);
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'exported_data.csv');
+            link.click();
+        }
+
+        function copyToClipboard() {
+            const csvContent = Papa.unparse(columnData);
+            navigator.clipboard.writeText(csvContent)
+                .then(() => {
+                    alert('Data copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Error copying data to clipboard:', err);
+                });
         }
     </script>
 </body>
